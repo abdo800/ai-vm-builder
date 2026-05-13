@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI VM Builder</title>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#0f0f0f;color:#e8e8e6;min-height:100vh;padding:28px 16px}
+    .container{max-width:860px;margin:0 auto}
+    header{margin-bottom:24px;display:flex;align-items:center;gap:12px}
+    header h1{font-size:22px;font-weight:600}
+    .badge{font-size:11px;padding:3px 9px;border-radius:20px;font-weight:600}
+    .badge-ai{background:#1D9E75;color:#fff}
+    .badge-secure{background:#3C3489;color:#fff}
+    .tabs{display:flex;gap:4px;margin-bottom:20px;background:#1a1a1a;border-radius:10px;padding:4px}
+    .tab{flex:1;padding:9px;text-align:center;font-size:13px;font-weight:500;border-radius:7px;cursor:pointer;color:#888;border:none;background:none;transition:all .15s}
+    .tab.active{background:#2a2a2a;color:#e8e8e6}
+    .tab:hover:not(.active){color:#ccc}
+    .panel{display:none}.panel.active{display:block}
+    .card{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:22px;margin-bottom:14px}
+    .card-title{font-size:11px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px}
+    textarea,select,input[type=text]{width:100%;padding:10px 13px;font-size:14px;font-family:inherit;background:#111;border:1px solid #333;border-radius:8px;color:#e8e8e6;transition:border-color .15s}
+    textarea{min-height:72px;resize:vertical}
+    textarea:focus,select:focus,input:focus{outline:none;border-color:#1D9E75}
+    label{font-size:12px;color:#888;font-weight:500}
+    .row{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;align-items:flex-end}
+    .field{display:flex;flex-direction:column;gap:5px}
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;transition:opacity .15s}
+    .btn:disabled{opacity:.4;cursor:not-allowed}
+    .btn:hover:not(:disabled){opacity:.8}
+    .btn-primary{background:#1D9E75;color:#fff}
+    .btn-secondary{background:#2a2a2a;color:#ccc;border:1px solid #333}
+    .btn-danger{background:#C0392B;color:#fff}
+    .btn-warning{background:#E67E22;color:#fff}
+    .btn-purple{background:#3C3489;color:#fff}
+    .btn-row{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+    .config-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:14px}
+    .config-item{background:#111;border-radius:8px;padding:11px 13px;border:1px solid #222}
+    .config-item .lbl{font-size:10px;color:#555;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+    .config-item .val{font-size:14px;font-weight:500;color:#e8e8e6;margin-top:3px}
+    .pkg-row{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+    .pkg{padding:3px 10px;border-radius:20px;font-size:12px;font-weight:500}
+    .pkg-apt{background:#1a2f26;color:#4CAF84;border:1px solid #1D9E75}
+    .pkg-pip{background:#1a1f35;color:#7986CB;border:1px solid #3C3489}
+    .pkg-npm{background:#2f2a10;color:#FFB74D;border:1px solid #E67E22}
+    .purpose-text{font-size:13px;color:#888;font-style:italic;margin-bottom:12px}
+    .model-badge{display:inline-flex;align-items:center;gap:5px;background:#1a1a2e;color:#7986CB;border-radius:20px;font-size:11px;font-weight:500;padding:3px 10px;margin-bottom:12px;border:1px solid #3C3489}
+    .status-box{border-radius:8px;padding:11px 14px;font-size:13px;display:none;margin-top:10px}
+    .status-box.visible{display:block}
+    .status-success{background:#0d2b22;color:#4CAF84;border:1px solid #1D9E75}
+    .status-error{background:#2b0d0d;color:#E57373;border:1px solid #C0392B}
+    .status-loading{background:#1a1a2e;color:#7986CB;border:1px solid #3C3489}
+    .status-warning{background:#2b1f0d;color:#FFB74D;border:1px solid #E67E22}
+    .spinner{display:inline-block;width:12px;height:12px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:5px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    code{font-family:"SF Mono","Fira Code",monospace;font-size:12px;background:#111;padding:2px 6px;border-radius:4px;border:1px solid #2a2a2a;color:#7986CB}
+    .cmd-box{background:#0a0a0a;color:#a8e6cf;border-radius:8px;padding:12px 14px;font-family:"SF Mono",monospace;font-size:12px;margin-top:7px;word-break:break-all;border:1px solid #1a2f26}
+    .ct-table{width:100%;border-collapse:collapse;font-size:13px}
+    .ct-table th{text-align:left;padding:8px 10px;border-bottom:1px solid #222;color:#555;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+    .ct-table td{padding:9px 10px;border-bottom:1px solid #1a1a1a;vertical-align:middle}
+    .ct-table tr:last-child td{border-bottom:none}
+    .ct-table tr:hover td{background:#1a1a1a}
+    .pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+    .pill-run{background:#0d2b22;color:#4CAF84}
+    .pill-exit{background:#222;color:#666}
+    .pill-none{background:#0d2b22;color:#4CAF84}
+    .pill-low{background:#2b2510;color:#FFD54F}
+    .pill-medium{background:#2b1f0d;color:#FFB74D}
+    .pill-high{background:#2b1010;color:#EF9A9A}
+    .pill-critical{background:#3b0a0a;color:#FF5252}
+    .threat-card{background:#111;border:1px solid #2a2a2a;border-radius:8px;padding:12px;margin-bottom:8px}
+    .threat-card.critical{border-color:#C0392B}
+    .threat-card.high{border-color:#E67E22}
+    .threat-card.medium{border-color:#F39C12}
+    .patch-card{background:#0d2b22;border:1px solid #1D9E75;border-radius:8px;padding:12px;margin-bottom:8px}
+    .patch-cmd{font-family:"SF Mono",monospace;font-size:12px;color:#a8e6cf;margin-top:6px}
+    .defense-status{display:flex;align-items:center;gap:8px;font-size:13px}
+    .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+    .dot-on{background:#1D9E75;box-shadow:0 0 6px #1D9E75}
+    .dot-off{background:#444}
+    .log-entry{background:#111;border:1px solid #1a1a1a;border-radius:6px;padding:10px;margin-bottom:6px;font-size:12px}
+    .examples{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
+    .ex-btn{font-size:11px;padding:4px 10px;background:#1a1a1a;border:1px solid #333;border-radius:20px;cursor:pointer;color:#888;transition:all .1s}
+    .ex-btn:hover{background:#2a2a2a;color:#ccc}
+    .provider-note{font-size:11px;color:#555;margin-top:5px}
+    .section-sep{border:none;border-top:1px solid #1a1a1a;margin:16px 0}
+    #containers-section,#config-section,#result-section{display:none}
+    .tip{font-size:12px;color:#555;margin-top:8px}
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div>
+      <h1>AI VM Builder</h1>
+      <div style="font-size:13px;color:#555;margin-top:3px;">OpenRouter · Docker · Zero-Day Defense</div>
+    </div>
+    <span class="badge badge-ai" style="margin-left:auto">AI-Powered</span>
+    <span class="badge badge-secure">🛡 Defense</span>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('build')">🖥 Build VM</button>
+    <button class="tab" onclick="switchTab('containers')">📦 Containers</button>
+    <button class="tab" onclick="switchTab('security')">🛡 Security</button>
+    <button class="tab" onclick="switchTab('log')">📋 Defense Log</button>
+    <button class="tab" onclick="switchTab('battle')">⚔ Red vs Blue</button>
+    <button class="tab" onclick="switchTab('settings')">⚙ LLM Settings</button>
+  </div>
+
+  <!-- ═══ TAB: BUILD ═══ -->
+  <div class="panel active" id="tab-build">
+
+    <div class="card">
+      <div class="card-title">Describe your VM</div>
+      <textarea id="prompt" placeholder="e.g. a production Python Flask API with PostgreSQL, nginx, and Redis"></textarea>
+      <div class="examples">
+        <button class="ex-btn" onclick="fill('lightweight Python Flask REST API with gunicorn')">Flask API</button>
+        <button class="ex-btn" onclick="fill('Node.js Express app with PM2 and nginx')">Node.js</button>
+        <button class="ex-btn" onclick="fill('PostgreSQL database server for production')">Postgres</button>
+        <button class="ex-btn" onclick="fill('ML inference server with PyTorch and FastAPI')">ML server</button>
+        <button class="ex-btn" onclick="fill('minimal alpine container for shell scripts')">Alpine</button>
+        <button class="ex-btn" onclick="fill('Redis cache server')">Redis</button>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label>LLM Provider</label>
+          <select id="provider-select" onchange="onProviderChange()">
+            <option value="openrouter">OpenRouter (default)</option>
+            <option value="anthropic">Anthropic — Claude</option>
+            <option value="openai">OpenAI</option>
+            <option value="groq">Groq (fast + free)</option>
+            <option value="ollama">Ollama (local)</option>
+          </select>
+        </div>
+        <div class="field" style="flex:1;min-width:200px">
+          <label>Model <span style="font-weight:400;color:#444">(alias or full name)</span></label>
+          <input type="text" id="model-input" placeholder="leave blank for default">
+        </div>
+      </div>
+      <div class="provider-note" id="provider-note"></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="analyze-btn" onclick="analyzeVM()">✦ Analyze with AI</button>
+      </div>
+      <div class="status-box" id="analyze-status"></div>
+    </div>
+
+    <div class="card" id="config-section">
+      <div class="card-title">Generated configuration</div>
+      <div id="model-used-badge"></div>
+      <div id="purpose-row"></div>
+      <div class="config-grid" id="config-grid"></div>
+      <div id="packages-row"></div>
+      <div id="ports-row"></div>
+      <div id="security-row"></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="create-btn" onclick="createVM()">▶ Create container</button>
+        <button class="btn btn-secondary" onclick="reset()">↺ Start over</button>
+      </div>
+      <div class="status-box" id="create-status"></div>
+    </div>
+
+    <div class="card" id="result-section">
+      <div class="card-title">Container ready</div>
+      <div id="result-content"></div>
+    </div>
+
+  </div>
+
+  <!-- ═══ TAB: CONTAINERS ═══ -->
+  <div class="panel" id="tab-containers">
+    <div class="card">
+      <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+        <span>Your containers</span>
+        <button class="btn btn-secondary" style="padding:5px 10px;font-size:12px" onclick="loadContainers()">Refresh</button>
+      </div>
+      <div id="containers-list"><div style="color:#555;font-size:13px">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- ═══ TAB: SECURITY ═══ -->
+  <div class="panel" id="tab-security">
+    <div class="card">
+      <div class="card-title">AI Zero-Day Defense</div>
+      <p style="font-size:13px;color:#666;margin-bottom:14px">
+        Select a container to run an AI-powered security scan. The AI collects a live snapshot (processes, network, files, logs),
+        analyzes it for threats, and applies live patches — no reboot required.
+      </p>
+      <div class="row">
+        <div class="field" style="flex:1">
+          <label>Container to defend</label>
+          <select id="security-container-select">
+            <option value="">— select a container —</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Scan interval</label>
+          <select id="scan-interval">
+            <option value="30">30 seconds</option>
+            <option value="60" selected>1 minute</option>
+            <option value="300">5 minutes</option>
+            <option value="600">10 minutes</option>
+          </select>
+        </div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="dry-run-toggle" checked>
+          <span style="font-size:13px;color:#888">Dry run (analyze only, don't apply patches)</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-left:16px">
+          <input type="checkbox" id="auto-patch-toggle">
+          <span style="font-size:13px;color:#888">Auto-apply safe patches</span>
+        </label>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-purple" onclick="runSingleScan()">🔍 Scan once</button>
+        <button class="btn btn-warning" id="monitor-btn" onclick="toggleMonitor()">▶ Start monitoring</button>
+      </div>
+      <div class="status-box" id="security-status"></div>
+    </div>
+
+    <div id="scan-results" style="display:none">
+      <div class="card">
+        <div class="card-title" style="display:flex;justify-content:space-between">
+          <span>Scan results</span>
+          <span id="threat-level-badge"></span>
+        </div>
+        <div id="scan-summary" style="font-size:13px;color:#888;margin-bottom:14px"></div>
+        <div id="ml-scores-section"></div>
+        <div id="threats-section"></div>
+        <div id="patches-section"></div>
+        <div id="recommendations-section"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ TAB: LOG ═══ -->
+  <div class="panel" id="tab-log">
+    <div class="card">
+      <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+        <span>Defense log</span>
+        <button class="btn btn-secondary" style="padding:5px 10px;font-size:12px" onclick="loadLog()">Refresh</button>
+      </div>
+      <div id="log-entries"><div style="color:#555;font-size:13px">No log entries yet.</div></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let currentConfig = null;
+let monitoringActive = {};
+
+const PROVIDER_NOTES = {
+  openrouter: 'Set OPENROUTER_API_KEY in .env — access 200+ models free at openrouter.ai',
+  anthropic:  'Set ANTHROPIC_API_KEY in .env — uses Claude Sonnet by default.',
+  openai:     'Set OPENAI_API_KEY in .env — uses gpt-4o-mini by default.',
+  groq:       'Set GROQ_API_KEY in .env — ultra-fast inference, free tier at groq.com',
+  ollama:     'No API key needed. Run: ollama pull llama3 — then start Docker + Ollama.',
+};
+const PROVIDER_PLACEHOLDERS = {
+  openrouter: 'e.g. mistral-7b, llama3-70b, gpt4o, gemini-flash',
+  anthropic:  'e.g. claude-sonnet-4-20250514',
+  openai:     'e.g. gpt-4o, gpt-4o-mini',
+  groq:       'e.g. llama3-70b-8192',
+  ollama:     'e.g. llama3, mistral, phi3',
+};
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    const names = ['build','containers','security','log','battle','settings'];
+    t.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.panel').forEach((p,i) => {
+    const names = ['build','containers','security','log','battle','settings'];
+    p.classList.toggle('active', names[i] === name);
+  });
+  if (name === 'containers') loadContainers();
+  if (name === 'battle') loadBattleStatus();
+  if (name === 'settings') loadSettingsPage();
+  if (name === 'security')   loadSecurityContainerList();
+  if (name === 'log')        loadLog();
+}
+
+function onProviderChange() {
+  const p = document.getElementById('provider-select').value;
+  document.getElementById('provider-note').textContent = PROVIDER_NOTES[p] || '';
+  document.getElementById('model-input').placeholder = PROVIDER_PLACEHOLDERS[p] || '';
+}
+onProviderChange();
+
+function fill(text) { document.getElementById('prompt').value = text; }
+
+function showStatus(id, msg, type) {
+  const el = document.getElementById(id);
+  el.className = `status-box visible status-${type}`;
+  el.innerHTML = type === 'loading' ? `<span class="spinner"></span>${msg}` : msg;
+}
+function hideStatus(id) { document.getElementById(id).className = 'status-box'; }
+
+async function analyzeVM() {
+  const prompt   = document.getElementById('prompt').value.trim();
+  const provider = document.getElementById('provider-select').value;
+  const model    = document.getElementById('model-input').value.trim() || null;
+  if (!prompt) { showStatus('analyze-status','Please describe your VM first.','error'); return; }
+  const btn = document.getElementById('analyze-btn');
+  btn.disabled = true;
+  document.getElementById('config-section').style.display = 'none';
+  document.getElementById('result-section').style.display = 'none';
+  showStatus('analyze-status', `Calling ${provider}${model ? ' / '+model : ''}…`, 'loading');
+  try {
+    const res  = await fetch('/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt,provider,model})});
+    const data = await res.json();
+    if (data.config) {
+      currentConfig = data.config;
+      renderConfig(data.config, data.provider, data.model);
+      hideStatus('analyze-status');
+      document.getElementById('config-section').style.display = 'block';
+    } else {
+      showStatus('analyze-status', 'Error: '+(data.error||'Unknown'), 'error');
+    }
+  } catch(e) { showStatus('analyze-status','Network error: '+e.message,'error'); }
+  finally { btn.disabled = false; }
+}
+
+function renderConfig(config, provider, model) {
+  const osL = {'ubuntu-22.04':'Ubuntu 22.04','debian-12':'Debian 12','alpine':'Alpine'};
+  const secColors = {minimal:'#555',standard:'#7986CB',hardened:'#FFB74D',paranoid:'#EF9A9A'};
+  document.getElementById('model-used-badge').innerHTML =
+    `<div class="model-badge">⚡ ${provider}${model?' / '+model:''}</div>`;
+  document.getElementById('purpose-row').innerHTML = config.purpose
+    ? `<div class="purpose-text">"${config.purpose}"</div>` : '';
+  document.getElementById('config-grid').innerHTML = `
+    <div class="config-item"><div class="lbl">OS</div><div class="val">${osL[config.os]||config.os}</div></div>
+    <div class="config-item"><div class="lbl">CPU</div><div class="val">${config.cpu} core${config.cpu>1?'s':''}</div></div>
+    <div class="config-item"><div class="lbl">RAM</div><div class="val">${config.ram_gb} GB</div></div>
+    <div class="config-item"><div class="lbl">Disk</div><div class="val">${config.disk_gb} GB</div></div>
+  `;
+  let pkgHtml = '';
+  const apt = config.packages||[], pip = config.pip_packages||[], npm = config.npm_packages||[];
+  if (apt.length||pip.length||npm.length) {
+    pkgHtml = '<div style="font-size:10px;color:#555;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px">Packages</div><div class="pkg-row">';
+    apt.forEach(p => pkgHtml += `<span class="pkg pkg-apt">apt: ${p}</span>`);
+    pip.forEach(p => pkgHtml += `<span class="pkg pkg-pip">pip: ${p}</span>`);
+    npm.forEach(p => pkgHtml += `<span class="pkg pkg-npm">npm: ${p}</span>`);
+    pkgHtml += '</div>';
+  }
+  document.getElementById('packages-row').innerHTML = pkgHtml;
+  const ports = config.ports||[];
+  document.getElementById('ports-row').innerHTML = ports.length
+    ? `<div style="font-size:12px;color:#666;margin-top:10px">Ports: <strong style="color:#e8e8e6">${ports.join(', ')}</strong></div>` : '';
+  const sec = config.security_profile||'standard';
+  document.getElementById('security-row').innerHTML =
+    `<div style="font-size:12px;color:#666;margin-top:8px">Security profile: <strong style="color:${secColors[sec]||'#888'}">${sec}</strong></div>`;
+}
+
+async function createVM() {
+  if (!currentConfig) return;
+  const btn = document.getElementById('create-btn');
+  btn.disabled = true;
+  document.getElementById('result-section').style.display = 'none';
+  showStatus('create-status','Creating container and installing all packages… (30–90s)','loading');
+  try {
+    const res  = await fetch('/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({config:currentConfig})});
+    const data = await res.json();
+    if (data.success) {
+      hideStatus('create-status');
+      document.getElementById('result-section').style.display = 'block';
+      document.getElementById('result-content').innerHTML = `
+        <div style="color:#4CAF84;font-weight:500;margin-bottom:12px">✓ Container is running!</div>
+        <div style="font-size:12px;color:#666;margin-bottom:5px">ID: <code>${data.container_id}</code> &nbsp; Name: <code>${data.container_name}</code></div>
+        <div style="font-size:12px;color:#666;margin-bottom:12px">Image: <code>${data.image}</code> &nbsp; Security: <code>${data.security_profile}</code></div>
+        <div style="font-size:10px;color:#555;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Connect</div>
+        <div class="cmd-box">${data.connect_cmd}</div>
+        <div style="font-size:10px;color:#555;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin:12px 0 5px">Stop</div>
+        <div class="cmd-box">${data.stop_cmd}</div>
+        <div class="btn-row" style="margin-top:14px">
+          <button class="btn btn-purple" onclick="switchTab('security');setTimeout(()=>{document.getElementById('security-container-select').value='${data.container_id}'},300)">🛡 Activate Defense</button>
+        </div>
+      `;
+      loadContainers();
+    } else {
+      showStatus('create-status','Error: '+(data.error||'Failed'),'error');
+    }
+  } catch(e) { showStatus('create-status','Network error: '+e.message,'error'); }
+  finally { btn.disabled = false; }
+}
+
+function reset() {
+  currentConfig = null;
+  document.getElementById('prompt').value = '';
+  document.getElementById('config-section').style.display = 'none';
+  document.getElementById('result-section').style.display = 'none';
+  hideStatus('analyze-status');
+}
+
+// ── Containers tab ────────────────────────────────────────────────────────────
+
+async function loadContainers() {
+  try {
+    const res  = await fetch('/containers');
+    const data = await res.json();
+    const el   = document.getElementById('containers-list');
+    if (!data.containers?.length) {
+      el.innerHTML = '<div style="color:#555;font-size:13px">No containers yet. Build one in the VM tab.</div>';
+      return;
+    }
+    el.innerHTML = `<table class="ct-table">
+      <thead><tr><th>ID</th><th>Name</th><th>Image</th><th>Security</th><th>Status</th><th>Defense</th><th>Actions</th></tr></thead>
+      <tbody>${data.containers.map(c=>`
+        <tr>
+          <td><code>${c.id}</code></td><td style="color:#ccc">${c.name}</td>
+          <td><code>${c.image}</code></td>
+          <td><span style="font-size:11px;color:#7986CB">${c.security||'standard'}</span></td>
+          <td><span class="pill pill-${c.status==='running'?'run':'exit'}">${c.status}</span></td>
+          <td><span class="dot ${c.defense_active?'dot-on':'dot-off'}"></span> ${c.defense_active?'<span style="font-size:11px;color:#1D9E75">active</span>':'<span style="font-size:11px;color:#444">off</span>'}</td>
+          <td style="display:flex;gap:6px;flex-wrap:wrap">
+            ${c.status==='running'
+              ? `<button class="btn btn-secondary" style="padding:4px 9px;font-size:11px" onclick="stopC('${c.id}')">Stop</button>
+                 <button class="btn btn-purple" style="padding:4px 9px;font-size:11px" onclick="switchTab('security');setTimeout(()=>{document.getElementById('security-container-select').value='${c.id}'},200)">🛡 Defend</button>`
+              : `<button class="btn btn-danger" style="padding:4px 9px;font-size:11px" onclick="removeC('${c.id}')">Remove</button>`
+            }
+          </td>
+        </tr>`).join('')}
+      </tbody></table>`;
+  } catch(e) { document.getElementById('containers-list').innerHTML = '<div style="color:#E57373">Error loading containers.</div>'; }
+}
+
+async function stopC(id)   { await fetch(`/containers/${id}/stop`,{method:'POST'}); loadContainers(); }
+async function removeC(id) { await fetch(`/containers/${id}/remove`,{method:'DELETE'}); loadContainers(); }
+
+// ── Security tab ──────────────────────────────────────────────────────────────
+
+async function loadSecurityContainerList() {
+  const sel = document.getElementById('security-container-select');
+  const current = sel.value;
+  try {
+    const res  = await fetch('/containers');
+    const data = await res.json();
+    sel.innerHTML = '<option value="">— select a container —</option>';
+    (data.containers||[]).filter(c=>c.status==='running').forEach(c=>{
+      const opt = document.createElement('option');
+      opt.value = c.id; opt.textContent = `${c.id} — ${c.name}`;
+      if(c.id===current) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  } catch(e){}
+}
+
+async function runSingleScan() {
+  const cid      = document.getElementById('security-container-select').value;
+  const dry_run  = document.getElementById('dry-run-toggle').checked;
+  const auto_patch = document.getElementById('auto-patch-toggle').checked;
+  if (!cid) { showStatus('security-status','Select a container first.','error'); return; }
+  showStatus('security-status','Running AI security scan… (30–60s)','loading');
+  document.getElementById('scan-results').style.display = 'none';
+  try {
+    const res  = await fetch(`/security/scan/${cid}`,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({dry_run,auto_patch})});
+    const data = await res.json();
+    if (data.assessment) {
+      hideStatus('security-status');
+      renderScanResults(data.assessment);
+    } else {
+      showStatus('security-status','Error: '+(data.error||'Unknown'),'error');
+    }
+  } catch(e) { showStatus('security-status','Error: '+e.message,'error'); }
+}
+
+async function toggleMonitor() {
+  const cid      = document.getElementById('security-container-select').value;
+  const interval = document.getElementById('scan-interval').value;
+  const dry_run  = document.getElementById('dry-run-toggle').checked;
+  const auto_patch = document.getElementById('auto-patch-toggle').checked;
+  const btn      = document.getElementById('monitor-btn');
+  if (!cid) { showStatus('security-status','Select a container first.','error'); return; }
+
+  if (monitoringActive[cid]) {
+    await fetch(`/security/monitor/${cid}`,{method:'DELETE'});
+    monitoringActive[cid] = false;
+    btn.textContent = '▶ Start monitoring';
+    btn.className = 'btn btn-warning';
+    showStatus('security-status','Monitoring stopped.','warning');
+  } else {
+    const res  = await fetch(`/security/monitor/${cid}`,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({interval:parseInt(interval),dry_run,auto_patch})});
+    const data = await res.json();
+    if (data.success) {
+      monitoringActive[cid] = true;
+      btn.textContent = '■ Stop monitoring';
+      btn.className = 'btn btn-danger';
+      showStatus('security-status',`Monitoring active — scanning every ${interval}s. Results update automatically.`,'success');
+      // Poll for results
+      const poll = setInterval(async()=>{
+        if (!monitoringActive[cid]) { clearInterval(poll); return; }
+        try {
+          const r = await fetch(`/security/status/${cid}`);
+          const d = await r.json();
+          if (d.threat_level) renderScanResults(d);
+        } catch(e){}
+      }, Math.max(parseInt(interval)*1000, 15000));
+    } else {
+      showStatus('security-status','Error: '+(data.error||'Failed'),'error');
+    }
+  }
+}
+
+function scoreColor(v) {
+  if (!v) return '#555';
+  if (v > 0.8) return '#FF5252';
+  if (v > 0.6) return '#EF9A9A';
+  if (v > 0.4) return '#FFB74D';
+  if (v > 0.2) return '#FFD54F';
+  return '#4CAF84';
+}
+function renderScanResults(assessment) {
+  const level      = assessment.threat_level || 'none';
+  const threats    = assessment.threats || [];
+  const patches    = assessment.patches || [];
+  const recs       = assessment.recommendations || [];
+  const summary    = assessment.summary || '';
+  const lastScan   = assessment.last_scan || assessment.timestamp || '';
+
+  document.getElementById('scan-results').style.display = 'block';
+  document.getElementById('threat-level-badge').innerHTML =
+    `<span class="pill pill-${level}">${level.toUpperCase()}</span>`;
+  // ML scores panel
+  const mlScores = assessment.ml_scores || {};
+  const mlReasons = assessment.ml_reasons || [];
+  const mlHtml = mlScores.ensemble !== undefined ? `
+    <div style="background:#0a0a14;border:1px solid #2a2a4a;border-radius:8px;padding:12px;margin-bottom:14px">
+      <div style="font-size:10px;color:#555;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">ML Anomaly Detection</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px">
+        <div style="flex:1;min-width:80px;background:#111;border-radius:6px;padding:8px;text-align:center">
+          <div style="font-size:10px;color:#555;margin-bottom:3px">Z-SCORE</div>
+          <div style="font-size:16px;font-weight:600;color:${scoreColor(mlScores.z_score)}">${(mlScores.z_score||0).toFixed(2)}</div>
+        </div>
+        <div style="flex:1;min-width:80px;background:#111;border-radius:6px;padding:8px;text-align:center">
+          <div style="font-size:10px;color:#555;margin-bottom:3px">ISOLATION FOREST</div>
+          <div style="font-size:16px;font-weight:600;color:${scoreColor(mlScores.isolation_forest)}">${(mlScores.isolation_forest||0).toFixed(2)}</div>
+        </div>
+        <div style="flex:1;min-width:80px;background:#111;border-radius:6px;padding:8px;text-align:center">
+          <div style="font-size:10px;color:#555;margin-bottom:3px">AUTOENCODER</div>
+          <div style="font-size:16px;font-weight:600;color:${scoreColor(mlScores.autoencoder)}">${(mlScores.autoencoder||0).toFixed(2)}</div>
+        </div>
+        <div style="flex:1;min-width:80px;background:#1a1a2e;border:1px solid #3C3489;border-radius:6px;padding:8px;text-align:center">
+          <div style="font-size:10px;color:#7986CB;margin-bottom:3px">ENSEMBLE</div>
+          <div style="font-size:18px;font-weight:700;color:${scoreColor(mlScores.ensemble)}">${(mlScores.ensemble||0).toFixed(2)}</div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:#555">${mlScores.baseline_established?'✓ Baseline established':'⏳ Building baseline...'} — ${mlScores.snapshots_seen||0} snapshots</div>
+      ${mlReasons.length ? `<div style="margin-top:8px">${mlReasons.map(r=>`<div style="font-size:11px;color:#FFB74D;padding:2px 0">⚠ ${r}</div>`).join('')}</div>` : ''}
+    </div>` : '';
+  const mlEl = document.getElementById('ml-scores-section');
+  if (mlEl) mlEl.innerHTML = mlHtml;
+
+  document.getElementById('scan-summary').innerHTML =
+    `${summary}${lastScan?` <span style="color:#444;font-size:11px">— ${lastScan.slice(0,19)} UTC</span>`:''}`;
+
+  const threatHtml = threats.length
+    ? `<div style="font-size:10px;color:#555;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">${threats.length} threat${threats.length>1?'s':''} detected</div>`
+    + threats.map(t=>`
+      <div class="threat-card ${t.severity}">
+        <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+          <span style="font-size:13px;font-weight:500;color:#e8e8e6">${t.type.replace(/_/g,' ')}</span>
+          <span class="pill pill-${t.severity}">${t.severity}</span>
+        </div>
+        <div style="font-size:13px;color:#888;margin-bottom:5px">${t.description}</div>
+        <div style="font-size:11px;color:#555">Evidence: ${t.evidence?.slice(0,150)||'—'}</div>
+      </div>`).join('')
+    : `<div style="color:#4CAF84;font-size:13px;margin-bottom:12px">✓ No threats detected.</div>`;
+  document.getElementById('threats-section').innerHTML = threatHtml;
+
+  const patchHtml = patches.length
+    ? `<hr class="section-sep"><div style="font-size:10px;color:#555;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">${patches.length} patch${patches.length>1?'es':''} available</div>`
+    + patches.map(p=>`
+      <div class="patch-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+          <span style="font-size:13px;font-weight:500;color:#4CAF84">${p.description}</span>
+          <span style="font-size:11px;color:${p.safe_to_auto_apply?'#4CAF84':'#FFB74D'}">${p.safe_to_auto_apply?'AUTO-SAFE':'MANUAL'} · risk: ${p.risk}</span>
+        </div>
+        <div class="patch-cmd">$ ${p.command}</div>
+        <div style="font-size:11px;color:#555;margin-top:4px">No reboot required · Applies live</div>
+      </div>`).join('')
+    : '';
+  document.getElementById('patches-section').innerHTML = patchHtml;
+
+  const recHtml = recs.length
+    ? `<hr class="section-sep"><div style="font-size:10px;color:#555;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Hardening tips</div>`
+    + recs.map(r=>`<div style="font-size:13px;color:#666;margin-bottom:6px;padding-left:8px;border-left:2px solid #333">• ${r}</div>`).join('')
+    : '';
+  document.getElementById('recommendations-section').innerHTML = recHtml;
+}
+
+// ── Log tab ───────────────────────────────────────────────────────────────────
+
+async function loadLog() {
+  try {
+    const res  = await fetch('/security/log?n=30');
+    const data = await res.json();
+    const el   = document.getElementById('log-entries');
+    if (!data.entries?.length) {
+      el.innerHTML = '<div style="color:#555;font-size:13px">No log entries yet. Run a security scan first.</div>';
+      return;
+    }
+    el.innerHTML = [...data.entries].reverse().map(e=>`
+      <div class="log-entry">
+        <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+          <span style="color:#666">${e.timestamp?.slice(0,19)||'—'} UTC</span>
+          <span style="display:flex;gap:8px;align-items:center">
+            <code style="font-size:11px">${e.container_id||'?'}</code>
+            <span class="pill pill-${e.threat_level||'none'}">${(e.threat_level||'none').toUpperCase()}</span>
+          </span>
+        </div>
+        <div style="color:#888;font-size:12px">${e.summary||''}</div>
+        ${e.threats?.length ? `<div style="font-size:11px;color:#555;margin-top:4px">${e.threats.length} threat(s) · ${e.patches?.length||0} patch(es) available · ${e.patch_results?.length||0} applied</div>` : ''}
+      </div>`).join('');
+  } catch(e) { document.getElementById('log-entries').innerHTML = '<div style="color:#E57373">Error loading log.</div>'; }
+}
+
+// Initial load
+loadContainers();
+</script>
+
+  <!-- ═══ TAB: RED vs BLUE ═══ -->
+  <div class="panel" id="tab-battle">
+    <div class="card">
+      <div class="card-title">⚔ Red vs Blue — Adversarial Self-Improving Defense</div>
+      <p style="font-size:13px;color:#666;margin-bottom:14px">
+        Two LLM agents battle inside a sandbox container. The <span style="color:#E24B4A;font-weight:500">Red Agent</span> attacks using real techniques. 
+        The <span style="color:#4B8FE2;font-weight:500">Blue Agent</span> detects and blocks each move using ML scores + eBPF events. 
+        Every Red success trains the Blue Agent to improve. The battle log is a live artifact of adversarial AI reasoning.
+      </p>
+      <div class="row">
+        <div class="field" style="flex:1">
+          <label>Container (sandbox)</label>
+          <select id="battle-container-select">
+            <option value="">— select a running container —</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Rounds</label>
+          <select id="battle-rounds">
+            <option value="5">5 rounds (demo)</option>
+            <option value="10" selected>10 rounds</option>
+            <option value="20">20 rounds</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Interval</label>
+          <select id="battle-interval">
+            <option value="10">10s (fast)</option>
+            <option value="20" selected>20s</option>
+            <option value="30">30s</option>
+          </select>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-danger"     id="battle-start-btn" onclick="startBattle()">⚔ Start Battle</button>
+        <button class="btn btn-secondary"  onclick="runOneRound()">▶ One Round</button>
+        <button class="btn btn-secondary"  onclick="stopBattle()">■ Stop</button>
+        <button class="btn btn-secondary"  style="padding:5px 10px;font-size:12px" onclick="loadBattleLog()">Refresh Log</button>
+      </div>
+      <div class="status-box" id="battle-status"></div>
+    </div>
+
+    <div id="battle-scoreboard" style="display:none">
+      <div class="card">
+        <div class="card-title">Live Scoreboard</div>
+        <div id="scoreboard-content"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Battle Log — latest rounds</div>
+      <div id="battle-log-entries"><div style="color:#555;font-size:13px">Start a battle to see the log.</div></div>
+    </div>
+  </div>
+
+<script>
+// ── Battle tab ────────────────────────────────────────────────────────────────
+
+async function loadBattleStatus() {
+  const res = await fetch('/containers').catch(()=>null);
+  if (!res) return;
+  const data = await res.json();
+  const sel = document.getElementById('battle-container-select');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— select a running container —</option>';
+  (data.containers||[]).filter(c=>c.status==='running').forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.id; opt.textContent = `${c.id} — ${c.name}`;
+    if (c.id === cur) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  loadBattleLog();
+}
+
+function showBattleStatus(msg, type) {
+  const el = document.getElementById('battle-status');
+  el.className = `status-box visible status-${type}`;
+  el.innerHTML = type==='loading' ? `<span class="spinner"></span>${msg}` : msg;
+}
+
+async function startBattle() {
+  const cid      = document.getElementById('battle-container-select').value;
+  const rounds   = document.getElementById('battle-rounds').value;
+  const interval = document.getElementById('battle-interval').value;
+  if (!cid) { showBattleStatus('Select a container first.','error'); return; }
+  showBattleStatus(`Starting ${rounds}-round battle...`, 'loading');
+  try {
+    const res  = await fetch(`/battle/start/${cid}`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({rounds:parseInt(rounds), interval:parseFloat(interval)})
+    });
+    const data = await res.json();
+    if (data.success) {
+      showBattleStatus(data.message, 'success');
+      document.getElementById('battle-scoreboard').style.display = 'block';
+      // Poll scoreboard every 15s
+      const poll = setInterval(async() => {
+        const sr = await fetch(`/battle/status/${cid}`).catch(()=>null);
+        if (!sr) { clearInterval(poll); return; }
+        const sd = await sr.json();
+        if (sd.score) renderScoreboard(sd);
+        if (!sd.running) { clearInterval(poll); loadBattleLog(); }
+        loadBattleLog();
+      }, 15000);
+    } else {
+      showBattleStatus('Error: '+(data.error||'Failed'),'error');
+    }
+  } catch(e) { showBattleStatus('Error: '+e.message,'error'); }
+}
+
+async function stopBattle() {
+  const cid = document.getElementById('battle-container-select').value;
+  if (!cid) return;
+  await fetch(`/battle/stop/${cid}`, {method:'POST'});
+  showBattleStatus('Battle stopped.','warning');
+}
+
+async function runOneRound() {
+  const cid = document.getElementById('battle-container-select').value;
+  if (!cid) { showBattleStatus('Select a container first.','error'); return; }
+  showBattleStatus('Running one round...','loading');
+  try {
+    const res  = await fetch(`/battle/run_round/${cid}`, {method:'POST'});
+    const data = await res.json();
+    if (data.success) {
+      const r = data.round;
+      showBattleStatus(
+        `Round ${r.round}: Red used <strong>${r.red_move.tool}</strong> → ` +
+        `Blue ${r.blocked ? '<span style="color:#4CAF84">BLOCKED</span>' : '<span style="color:#E24B4A">missed</span>'}. ` +
+        `${r.blue_response.reasoning?.slice(0,80)||''}`,
+        r.blocked ? 'success' : 'error'
+      );
+      loadBattleLog();
+    } else {
+      showBattleStatus('Error: '+(data.error||'Failed'),'error');
+    }
+  } catch(e) { showBattleStatus('Error: '+e.message,'error'); }
+}
+
+function renderScoreboard(status) {
+  const sc = status.score || {};
+  const total = status.round || 1;
+  const blueRate = Math.round((sc.blue_blocks||0) / total * 100);
+  document.getElementById('scoreboard-content').innerHTML = `
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px">
+      <div style="flex:1;min-width:140px;background:#111;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:11px;color:#555;margin-bottom:4px">ROUND</div>
+        <div style="font-size:28px;font-weight:700;color:#e8e8e6">${status.round||0}</div>
+      </div>
+      <div style="flex:1;min-width:140px;background:#2b0d0d;border:1px solid #C0392B;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:11px;color:#888;margin-bottom:4px">🔴 RED WINS</div>
+        <div style="font-size:28px;font-weight:700;color:#E57373">${sc.red_wins||0}</div>
+      </div>
+      <div style="flex:1;min-width:140px;background:#0d1e2b;border:1px solid #2980B9;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:11px;color:#888;margin-bottom:4px">🔵 BLUE BLOCKS</div>
+        <div style="font-size:28px;font-weight:700;color:#64B5F6">${sc.blue_blocks||0}</div>
+      </div>
+      <div style="flex:1;min-width:140px;background:#0d2b22;border:1px solid #1D9E75;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:11px;color:#888;margin-bottom:4px">BLUE WIN RATE</div>
+        <div style="font-size:28px;font-weight:700;color:#4CAF84">${blueRate}%</div>
+      </div>
+    </div>
+    ${status.last_round ? `
+    <div style="background:#111;border-radius:8px;padding:12px;font-size:12px">
+      <div style="color:#555;margin-bottom:6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">Latest Round</div>
+      <div style="color:#e8e8e6"><span style="color:#E57373">Red</span>: ${status.last_round.red_move?.tool||'?'} (${status.last_round.red_move?.phase||'?'})</div>
+      <div style="color:#e8e8e6;margin-top:4px"><span style="color:#64B5F6">Blue</span>: ${status.last_round.blue_response?.threat_type||'?'} — confidence ${Math.round((status.last_round.blue_response?.confidence||0)*100)}%</div>
+      <div style="margin-top:4px;color:${status.last_round.blocked?'#4CAF84':'#E57373'};font-weight:600">${status.last_round.outcome||'?'}</div>
+    </div>` : ''}
+  `;
+}
+
+async function loadBattleLog() {
+  try {
+    const res  = await fetch('/battle/log?n=20');
+    const data = await res.json();
+    const el   = document.getElementById('battle-log-entries');
+    if (!data.entries?.length) {
+      el.innerHTML = '<div style="color:#555;font-size:13px">No battle rounds yet.</div>';
+      return;
+    }
+    el.innerHTML = [...data.entries].reverse().map(e => {
+      const blocked = e.blocked;
+      const red  = e.red_move  || {};
+      const blue = e.blue_response || {};
+      return `
+      <div style="background:#111;border:1px solid ${blocked?'#1D5C44':'#5C1D1D'};border-radius:8px;padding:12px;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+          <span style="font-size:12px;color:#666">Round ${e.round} · ${(e.timestamp||'').slice(0,19)} UTC</span>
+          <span style="font-size:12px;font-weight:600;color:${blocked?'#4CAF84':'#E57373'}">${e.outcome||'?'}</span>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <div style="flex:1;min-width:200px">
+            <div style="font-size:10px;color:#E57373;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">🔴 Red Agent</div>
+            <div style="font-size:12px;color:#e8e8e6;margin-bottom:2px"><strong>${red.tool||'?'}</strong> · ${red.phase||'?'} · stealth: ${red.stealth||'?'}</div>
+            <div style="font-size:11px;color:#666">${(red.reasoning||'').slice(0,100)}</div>
+          </div>
+          <div style="flex:1;min-width:200px">
+            <div style="font-size:10px;color:#64B5F6;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">🔵 Blue Agent</div>
+            <div style="font-size:12px;color:#e8e8e6;margin-bottom:2px"><strong>${blue.threat_type||'?'}</strong> · confidence: ${Math.round((blue.confidence||0)*100)}%</div>
+            <div style="font-size:11px;color:#666">${(blue.learning||'').slice(0,100)}</div>
+          </div>
+        </div>
+        ${e.ml_scores?.ensemble !== undefined ? `<div style="font-size:11px;color:#555;margin-top:6px">ML ensemble: ${(e.ml_scores.ensemble||0).toFixed(2)}</div>` : ''}
+      </div>`;
+    }).join('');
+  } catch(e) { console.warn('Battle log error:', e); }
+}
+</script>
+
+
+  <!-- ═══ TAB: LLM SETTINGS ═══ -->
+  <div class="panel" id="tab-settings">
+
+    <div class="card">
+      <div class="card-title">⚙ LLM Provider & Proxy Configuration</div>
+      <p style="font-size:13px;color:#666;margin-bottom:16px">
+        Configure separate LLM providers for each purpose. Supports direct providers (OpenRouter, Groq, Anthropic, OpenAI, Together AI, Ollama) 
+        and proxy gateways (LiteLLM, Cloudflare AI Gateway, Portkey, or any custom OpenAI-compatible endpoint).
+      </p>
+
+      <!-- Purpose tabs -->
+      <div style="display:flex;gap:4px;margin-bottom:20px;background:#111;border-radius:8px;padding:4px">
+        <button class="btn" id="ptab-provisioning" onclick="switchPurpose('provisioning')"
+          style="flex:1;background:#1D9E75;color:#fff;border-radius:6px;padding:8px;font-size:13px">
+          🖥 VM Build
+        </button>
+        <button class="btn" id="ptab-security" onclick="switchPurpose('security')"
+          style="flex:1;background:#1a1a1a;color:#888;border-radius:6px;padding:8px;font-size:13px;border:none">
+          🛡 Security
+        </button>
+        <button class="btn" id="ptab-battle" onclick="switchPurpose('battle')"
+          style="flex:1;background:#1a1a1a;color:#888;border-radius:6px;padding:8px;font-size:13px;border:none">
+          ⚔ Battle
+        </button>
+      </div>
+
+      <div id="purpose-label" style="font-size:12px;color:#555;margin-bottom:12px">Configuring: VM Build (provisioning)</div>
+
+      <!-- Provider selector grid -->
+      <div style="font-size:11px;color:#555;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Select Provider</div>
+      <div id="provider-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-bottom:20px"></div>
+
+      <!-- Config fields -->
+      <div id="config-fields">
+        <div class="row" style="margin-top:0">
+          <div class="field" style="flex:1;min-width:200px">
+            <label>Model name</label>
+            <input type="text" id="cfg-model" placeholder="Leave blank for provider default">
+          </div>
+          <div class="field" style="flex:1;min-width:200px">
+            <label>API Key <span style="color:#555;font-weight:400">(stored locally only)</span></label>
+            <input type="password" id="cfg-api-key" placeholder="sk-... or your key">
+          </div>
+        </div>
+
+        <!-- Base URL (shown for proxies) -->
+        <div class="field" id="base-url-field" style="margin-top:12px;display:none">
+          <label>Base URL <span style="color:#1D9E75;font-size:11px" id="base-url-hint"></span></label>
+          <input type="text" id="cfg-base-url" placeholder="https://...">
+        </div>
+
+        <!-- Extra headers (advanced) -->
+        <div style="margin-top:12px">
+          <div style="cursor:pointer;font-size:12px;color:#555;user-select:none" onclick="toggleAdvanced()">
+            ▶ <span id="advanced-label">Advanced: Extra Headers (JSON)</span>
+          </div>
+          <div id="advanced-panel" style="display:none;margin-top:8px">
+            <textarea id="cfg-extra-headers" style="min-height:60px;font-family:var(--font-mono);font-size:12px"
+              placeholder='{"x-portkey-provider":"openai","x-custom-header":"value"}'></textarea>
+            <div style="font-size:11px;color:#555;margin-top:4px">
+              Use for Portkey provider routing, Cloudflare custom headers, LiteLLM virtual keys, etc.
+            </div>
+          </div>
+        </div>
+
+        <!-- Model examples -->
+        <div id="model-examples" style="margin-top:12px;display:none">
+          <div style="font-size:11px;color:#555;margin-bottom:6px">Quick-fill model names:</div>
+          <div id="model-example-pills" style="display:flex;flex-wrap:wrap;gap:5px"></div>
+        </div>
+
+        <!-- Setup hint -->
+        <div id="setup-hint-box" style="display:none;margin-top:12px">
+          <div style="background:#1a1a2e;border:1px solid #3C3489;border-radius:8px;padding:10px;font-size:12px;color:#BCBBF5">
+            <strong>Setup:</strong> <span id="setup-hint-text"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-row" style="margin-top:16px">
+        <button class="btn btn-primary" onclick="saveConfig()">💾 Save</button>
+        <button class="btn btn-secondary" onclick="testConnection()">🔌 Test Connection</button>
+        <button class="btn btn-secondary" onclick="loadSettingsPage()">↺ Reset</button>
+      </div>
+      <div class="status-box" id="settings-status"></div>
+    </div>
+
+    <!-- Current config summary -->
+    <div class="card" id="config-summary-card">
+      <div class="card-title">Active Configuration</div>
+      <div id="config-summary"></div>
+    </div>
+
+    <!-- Provider reference -->
+    <div class="card">
+      <div class="card-title">Provider Reference</div>
+      <div id="provider-reference"></div>
+    </div>
+
+  </div>
+
+<script>
+// ── Settings tab ──────────────────────────────────────────────────────────────
+
+let currentPurpose = 'provisioning';
+let providersData  = {};
+let selectedProvider = 'openrouter';
+
+const purposeLabels = {
+  provisioning: '🖥 VM Build (provisioning) — used when analyzing your VM description',
+  security:     '🛡 Security scanner — used during container threat analysis',
+  battle:       '⚔ Red vs Blue battle — used by Red Agent and Blue Agent',
+};
+
+async function loadSettingsPage() {
+  // Load provider catalog
+  try {
+    const res  = await fetch('/api/llm/providers');
+    providersData = await res.json();
+    renderProviderGrid(selectedProvider);
+    renderProviderReference();
+  } catch(e) { console.warn('Provider load error:', e); }
+
+  // Load current config
+  await refreshConfigSummary();
+}
+
+function switchPurpose(purpose) {
+  currentPurpose = purpose;
+  document.getElementById('purpose-label').textContent = 'Configuring: ' + purposeLabels[purpose];
+  ['provisioning','security','battle'].forEach(p => {
+    const btn = document.getElementById('ptab-'+p);
+    btn.style.background = p === purpose ? '#1D9E75' : '#1a1a1a';
+    btn.style.color      = p === purpose ? '#fff'    : '#888';
+  });
+  // Load saved config for this purpose
+  loadPurposeConfig(purpose);
+}
+
+async function loadPurposeConfig(purpose) {
+  try {
+    const res  = await fetch('/api/llm/current/'+purpose);
+    const data = await res.json();
+    if (data.provider) {
+      selectedProvider = data.provider;
+      renderProviderGrid(data.provider);
+      document.getElementById('cfg-model').value       = data.model || '';
+      document.getElementById('cfg-api-key').value     = '';  // never prefill key
+      document.getElementById('cfg-base-url').value    = data.base_url || '';
+      document.getElementById('cfg-extra-headers').value = '';
+      updateProviderFields(data.provider);
+    }
+  } catch(e) {}
+}
+
+function renderProviderGrid(selected) {
+  const grid = document.getElementById('provider-grid');
+  const categories = [
+    { label: '⚡ Direct Providers', keys: ['openrouter','anthropic','openai','groq','together','ollama'] },
+    { label: '🔀 Proxy Gateways',   keys: ['litellm','cloudflare','portkey','custom'] },
+  ];
+
+  grid.innerHTML = categories.map(cat => `
+    <div style="grid-column:1/-1;font-size:10px;color:#444;font-weight:700;text-transform:uppercase;
+      letter-spacing:.05em;margin-top:4px;padding-top:8px;border-top:1px solid #1a1a1a">${cat.label}</div>
+    ${cat.keys.map(pid => {
+      const p    = providersData[pid] || {};
+      const isSel = pid === selected;
+      const tier = p.free_tier ? '<span style="color:#1D9E75;font-size:10px">FREE</span>' : '<span style="color:#888;font-size:10px">PAID</span>';
+      return `
+        <div onclick="selectProvider('${pid}')"
+          style="background:${isSel ? '#0d2b22' : '#111'};border:1px solid ${isSel ? '#1D9E75' : '#2a2a2a'};
+            border-radius:8px;padding:10px 12px;cursor:pointer;transition:all .15s">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <span style="font-size:13px;font-weight:500;color:${isSel?'#4CAF84':'#e8e8e6'}">${p.label||pid}</span>
+            ${tier}
+          </div>
+          <div style="font-size:11px;color:#555;line-height:1.4">${(p.description||'').slice(0,60)}</div>
+        </div>`;
+    }).join('')}
+  `).join('');
+}
+
+function selectProvider(pid) {
+  selectedProvider = pid;
+  renderProviderGrid(pid);
+  updateProviderFields(pid);
+  // Auto-fill default model
+  const p = providersData[pid] || {};
+  if (p.default_model && !document.getElementById('cfg-model').value) {
+    document.getElementById('cfg-model').value = p.default_model;
+  }
+}
+
+function updateProviderFields(pid) {
+  const p = providersData[pid] || {};
+
+  // Base URL field
+  const needsUrl = p.needs_base_url || pid === 'ollama' || pid === 'custom';
+  const urlField = document.getElementById('base-url-field');
+  urlField.style.display = needsUrl ? 'flex' : 'none';
+  if (p.setup_hint) {
+    document.getElementById('base-url-hint').textContent = '— ' + p.setup_hint.slice(0,80);
+  }
+
+  // Model examples
+  const examples = p.model_examples || [];
+  const exBox = document.getElementById('model-examples');
+  exBox.style.display = examples.length ? 'block' : 'none';
+  document.getElementById('model-example-pills').innerHTML = examples.map(m =>
+    `<button class="ex-btn" onclick="document.getElementById('cfg-model').value='${m}'">${m}</button>`
+  ).join('');
+
+  // Setup hint
+  const hintBox = document.getElementById('setup-hint-box');
+  hintBox.style.display = p.setup_hint ? 'block' : 'none';
+  document.getElementById('setup-hint-text').textContent = p.setup_hint || '';
+}
+
+function toggleAdvanced() {
+  const panel = document.getElementById('advanced-panel');
+  const label = document.getElementById('advanced-label');
+  const showing = panel.style.display !== 'none';
+  panel.style.display = showing ? 'none' : 'block';
+  label.textContent = (showing ? '▶' : '▼') + ' Advanced: Extra Headers (JSON)';
+}
+
+function showSettingsStatus(msg, type) {
+  const el = document.getElementById('settings-status');
+  el.className = `status-box visible status-${type}`;
+  el.innerHTML = type === 'loading' ? `<span class="spinner"></span>${msg}` : msg;
+}
+
+async function saveConfig() {
+  const model        = document.getElementById('cfg-model').value.trim();
+  const api_key      = document.getElementById('cfg-api-key').value.trim();
+  const base_url     = document.getElementById('cfg-base-url').value.trim();
+  const extra_headers= document.getElementById('cfg-extra-headers').value.trim();
+
+  const payload = {
+    [currentPurpose]: {
+      provider: selectedProvider,
+      model:    model || (providersData[selectedProvider]?.default_model || ''),
+      ...(api_key       && { api_key }),
+      ...(base_url      && { base_url }),
+      ...(extra_headers && { extra_headers }),
+    }
+  };
+
+  showSettingsStatus('Saving...', 'loading');
+  try {
+    const res  = await fetch('/api/llm/config', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.success) {
+      showSettingsStatus(`✓ Saved — ${currentPurpose} → ${selectedProvider}${model ? ' / '+model : ''}`, 'success');
+      await refreshConfigSummary();
+    } else {
+      showSettingsStatus('Error: ' + (data.error||'Failed'), 'error');
+    }
+  } catch(e) { showSettingsStatus('Error: '+e.message, 'error'); }
+}
+
+async function testConnection() {
+  const model    = document.getElementById('cfg-model').value.trim();
+  const api_key  = document.getElementById('cfg-api-key').value.trim();
+  const base_url = document.getElementById('cfg-base-url').value.trim();
+
+  showSettingsStatus(`Testing connection to ${selectedProvider}...`, 'loading');
+  try {
+    // Save first, then test
+    await saveConfig();
+    const payload = { purpose: currentPurpose };
+    const res  = await fetch('/api/llm/test', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.success) {
+      showSettingsStatus(`✓ Connected — ${data.provider} / ${data.model} replied: "${data.response}"`, 'success');
+    } else {
+      let hint = '';
+      if (data.error?.includes('rate limit') || data.error?.includes('429')) {
+        hint = ' — Rate limit hit. Try Groq (free, 14k req/day) or add credits.';
+      } else if (data.error?.includes('401') || data.error?.includes('Unauthorized')) {
+        hint = ' — Invalid API key. Check your key at the provider dashboard.';
+      } else if (data.error?.includes('connect') || data.error?.includes('Connection')) {
+        hint = ' — Cannot reach endpoint. Check base URL or that Ollama/LiteLLM is running.';
+      }
+      showSettingsStatus(`✗ Failed: ${data.error}${hint}`, 'error');
+    }
+  } catch(e) { showSettingsStatus('Error: '+e.message, 'error'); }
+}
+
+async function refreshConfigSummary() {
+  try {
+    const res  = await fetch('/api/llm/config');
+    const data = await res.json();
+    const cfg  = data.config || {};
+    const purposes = ['provisioning','security','battle'];
+    const icons    = ['🖥','🛡','⚔'];
+    const labels   = ['VM Build','Security','Battle'];
+    document.getElementById('config-summary').innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+        ${purposes.map((p,i) => {
+          const c = cfg[p] || {};
+          return `
+          <div style="background:#111;border-radius:8px;padding:12px">
+            <div style="font-size:11px;color:#555;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">${icons[i]} ${labels[i]}</div>
+            <div style="font-size:13px;font-weight:500;color:#e8e8e6">${c.provider||'not set'}</div>
+            <div style="font-size:11px;color:#666;margin-top:3px;word-break:break-all">${c.model||'default model'}</div>
+            ${c.api_key ? `<div style="font-size:10px;color:#1D9E75;margin-top:4px">🔑 key set</div>` : '<div style="font-size:10px;color:#555;margin-top:4px">no key (using .env)</div>'}
+            ${c.base_url ? `<div style="font-size:10px;color:#7986CB;margin-top:2px;word-break:break-all">${c.base_url.slice(0,40)}...</div>` : ''}
+          </div>`;
+        }).join('')}
+      </div>`;
+  } catch(e) {}
+}
+
+function renderProviderReference() {
+  const cats = [
+    { label: 'Direct Providers', keys: ['openrouter','anthropic','openai','groq','together','ollama'] },
+    { label: 'Proxy Gateways',   keys: ['litellm','cloudflare','portkey','custom'] },
+  ];
+  document.getElementById('provider-reference').innerHTML = cats.map(cat => `
+    <div style="font-size:11px;color:#555;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+      margin:12px 0 8px;padding-bottom:4px;border-bottom:1px solid #1a1a1a">${cat.label}</div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr>
+        <th style="text-align:left;padding:5px 8px;color:#444;font-weight:600;border-bottom:1px solid #1a1a1a">Provider</th>
+        <th style="text-align:left;padding:5px 8px;color:#444;font-weight:600;border-bottom:1px solid #1a1a1a">Free</th>
+        <th style="text-align:left;padding:5px 8px;color:#444;font-weight:600;border-bottom:1px solid #1a1a1a">Default Model</th>
+        <th style="text-align:left;padding:5px 8px;color:#444;font-weight:600;border-bottom:1px solid #1a1a1a">Notes</th>
+      </tr></thead>
+      <tbody>
+        ${cat.keys.map(pid => {
+          const p = providersData[pid] || {};
+          return `<tr style="border-bottom:1px solid #111">
+            <td style="padding:6px 8px;color:#e8e8e6;font-weight:500">${p.label||pid}</td>
+            <td style="padding:6px 8px;color:${p.free_tier?'#1D9E75':'#555'}">${p.free_tier?'✓ Free':'Paid'}</td>
+            <td style="padding:6px 8px;color:#7986CB;font-family:monospace;font-size:11px">${p.default_model||'—'}</td>
+            <td style="padding:6px 8px;color:#555">${(p.description||'').slice(0,70)}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  `).join('');
+}
+</script>
+
+</body>
+</html>

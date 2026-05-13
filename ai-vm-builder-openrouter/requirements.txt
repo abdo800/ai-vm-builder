@@ -1,0 +1,26 @@
+# Core
+anthropic>=0.25.0
+openai>=1.30.0
+python-dotenv>=1.0.0
+docker>=7.0.0
+flask>=3.0.0
+
+# ML anomaly detection (Challenge 1 — install for full Isolation Forest support)
+# If not installed, the system falls back to Z-score + Autoencoder (pure Python)
+scikit-learn>=1.4.0
+numpy>=1.26.0
+
+# Optional: full eBPF support (Linux only, requires kernel headers)
+# bcc          → real eBPF programs via BCC
+# bpftrace     → eBPF tracing scripts
+# frida-tools  → dynamic code injection (Challenge 1 Frida requirement)
+
+# eBPF (Linux host only - real kernel hooks)
+# bcc                → real eBPF programs (apt: bpfcc-tools linux-headers-$(uname -r))
+
+# Frida (surgical process interception)
+# frida              → pip install frida frida-tools
+
+# ML (optional boost - falls back to pure Python if not installed)
+# scikit-learn>=1.4.0
+# numpy>=1.26.0
